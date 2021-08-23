@@ -1,9 +1,8 @@
-﻿using GenericRepository.Repos;
-using SharedKernel.Models.Common;
+﻿using SharedKernel.Models.Common;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace GenericRepository.UOW
+namespace IGenericRepository
 {
     public partial interface IUnitOfWork
     {

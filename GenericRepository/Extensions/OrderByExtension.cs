@@ -1,5 +1,4 @@
 ﻿using SharedKernel.Models.Common;
-using SharedKernel.Models.Specifications;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -11,7 +10,6 @@ namespace GenericRepository.Extensions
             where TEntity : class, IAggregateRoot
         {
             IOrderedQueryable<TEntity>? myOrder = null;
-
             foreach (var orderByParam in orderByParams)
             {
                 if (myOrder == null)
@@ -27,7 +25,7 @@ namespace GenericRepository.Extensions
                         : myOrder.ThenBy(orderByParam.OrderByExpression);
                 }
             }
-            return query;
+            return myOrder;
         }
     }
 }

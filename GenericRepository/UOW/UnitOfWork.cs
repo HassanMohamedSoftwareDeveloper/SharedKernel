@@ -1,4 +1,5 @@
 ﻿using GenericRepository.Repos;
+using IGenericRepository;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel.Models.Common;
 using System;
@@ -11,17 +12,19 @@ namespace GenericRepository.UOW
     {
         #region Fields :
         private readonly DbContext _dbContext;
+        private readonly IServiceProvider serviceProvider;
         #endregion
         #region CTORS :
-        public UnitOfWork(DbContext dbContext)
+        public UnitOfWork(DbContext dbContext,IServiceProvider serviceProvider)
         {
             this._dbContext = dbContext;
+            this.serviceProvider = serviceProvider;
         }
         #endregion
         #region Methods :
         public IRepository<TEntity> GetRepository<TEntity>() where TEntity : class, IAggregateRoot
         {
-            return new Repository<TEntity>(_dbContext);
+            return new Repository<TEntity>(_dbContext,serviceProvider);
         }
         public async Task<int> CompleteAsync()
         {

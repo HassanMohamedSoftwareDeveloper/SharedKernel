@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using GenericRepository.Extensions;
+using IGenericRepository;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using SharedKernel.Models.Common;
 using SharedKernel.Models.Specifications;
 using System;
@@ -15,12 +17,16 @@ namespace GenericRepository.Repos
         #region Fields :
         protected readonly DbContext Context;
         private readonly DbSet<TEntity> _dbSet;
+        private readonly IMapper mapper;
         #endregion
         #region CTORS :
-        public Repository(DbContext dbContext)
+        public Repository(DbContext dbContext, IServiceProvider serviceProvider)
         {
             this.Context = dbContext;
             _dbSet = dbContext.Set<TEntity>();
+            var mapper = serviceProvider.GetService<IMapper>();
+            if (mapper == null) throw new Exception("Mapper is not injected");
+            this.mapper = mapper;
         }
         #endregion
         #region Queries :
@@ -29,7 +35,7 @@ namespace GenericRepository.Repos
         {
             return await _dbSet.FindAsync(ids).ConfigureAwait(false);
         }
-        public async Task<TResult> GetByIdAsync<TResult>(IMapper mapper, params object[] ids)
+        public async Task<TResult> GetByIdAsync<TResult>(params object[] ids)
         {
             var entity = await _dbSet.FindAsync(ids).ConfigureAwait(false);
             return entity.MapTo<TEntity, TResult>(mapper);
@@ -39,7 +45,7 @@ namespace GenericRepository.Repos
         {
             return await _dbSet.GetQuery(specification).ToListAsync().ConfigureAwait(false);
         }
-        public async Task<IEnumerable<TResult>> GetAllAsync<TResult>(IMapper mapper, ISpecification<TEntity>? specification = null)
+        public async Task<IEnumerable<TResult>> GetAllAsync<TResult>(ISpecification<TEntity>? specification = null)
         {
             return await _dbSet.GetQuery(specification).GetQueryWithProjection<TEntity, TResult>(mapper).ToListAsync().ConfigureAwait(false);
         }
@@ -56,7 +62,7 @@ namespace GenericRepository.Repos
         {
             return await _dbSet.GetQuery(specification).SingleOrDefaultAsync().ConfigureAwait(false);
         }
-        public async Task<TResult> GetSingleOrDefaultAsync<TResult>(IMapper mapper, ISpecification<TEntity>? specification = null)
+        public async Task<TResult> GetSingleOrDefaultAsync<TResult>(ISpecification<TEntity>? specification = null)
         {
             return await _dbSet.GetQuery(specification).GetQueryWithProjection<TEntity, TResult>(mapper).SingleOrDefaultAsync().ConfigureAwait(false);
         }
@@ -74,7 +80,7 @@ namespace GenericRepository.Repos
         {
             return await _dbSet.GetQuery(specification).FirstOrDefaultAsync().ConfigureAwait(false);
         }
-        public async Task<TResult> GetFirstOrDefaultAsync<TResult>(IMapper mapper, ISpecification<TEntity>? specification = null)
+        public async Task<TResult> GetFirstOrDefaultAsync<TResult>(ISpecification<TEntity>? specification = null)
         {
             return await _dbSet.GetQuery(specification).GetQueryWithProjection<TEntity, TResult>(mapper).FirstOrDefaultAsync().ConfigureAwait(false);
         }
@@ -96,7 +102,7 @@ namespace GenericRepository.Repos
         {
             return await _dbSet.GetQuery(specification).CreatePagingAsync(paging).ConfigureAwait(false);
         }
-        public async Task<PagedList<TResult>> GetPagedAsync<TResult>(IMapper mapper, PagingParam paging, ISpecification<TEntity>? specification = null)
+        public async Task<PagedList<TResult>> GetPagedAsync<TResult>(PagingParam paging, ISpecification<TEntity>? specification = null)
         {
             return await _dbSet.GetQuery(specification).GetQueryWithProjection<TEntity, TResult>(mapper).CreatePagingAsync(paging).ConfigureAwait(false);
         }
@@ -116,15 +122,15 @@ namespace GenericRepository.Repos
             await _dbSet.AddAsync(entity).ConfigureAwait(false);
             return entity;
         }
-        public virtual async Task AddAsync<TInput>(TInput input, IMapper mapper)
+        public virtual async Task AddAsync<TInput>(TInput input)
         {
-            await _dbSet.AddAsync(input.MapTo<TInput,TEntity>(mapper)).ConfigureAwait(false);
+            await _dbSet.AddAsync(input.MapTo<TInput, TEntity>(mapper)).ConfigureAwait(false);
         }
         public virtual async Task AddRangeAsync(List<TEntity> entities)
         {
             await _dbSet.AddRangeAsync(entities).ConfigureAwait(false);
         }
-        public virtual async Task AddRangeAsync<TInput>(List<TInput> inputs, IMapper mapper)
+        public virtual async Task AddRangeAsync<TInput>(List<TInput> inputs)
         {
             await _dbSet.AddRangeAsync(inputs.MapTo<TInput, TEntity>(mapper)).ConfigureAwait(false);
         }
@@ -144,7 +150,7 @@ namespace GenericRepository.Repos
         {
             return await Task.FromResult(_dbSet.Update(entity).Entity);
         }
-        public virtual async Task UpdateAsync<TInput>(TInput input, IMapper mapper,params object[] ids)
+        public virtual async Task UpdateAsync<TInput>(TInput input, params object[] ids)
         {
             var oldEntity = await GetByIdAsync(ids).ConfigureAwait(false);
             _dbSet.Update(input.MapTo(oldEntity, mapper));
